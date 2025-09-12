@@ -158,5 +158,5 @@ class VoxtralHFPlugin:
     def cleanup(
             self
         ) -> None
-        "Clean up resources."
+        "Clean up resources with aggressive memory management."
 ```

@@ -332,6 +332,10 @@ class VoxtralHFPlugin(PluginInterface):
                 outputs[:, inputs.input_ids.shape[1]:], 
                 skip_special_tokens=True
             )[0]
+
+            # Clean up tensors immediately
+            del inputs
+            del outputs
             
             # Clear GPU cache if using CUDA
             if self.device == "cuda" and torch.cuda.is_available():
@@ -370,17 +374,61 @@ class VoxtralHFPlugin(PluginInterface):
     def cleanup(
         self
     ) -> None:
-        """Clean up resources."""
-        if self.model is not None or self.processor is not None:
-            self.logger.info("Unloading Voxtral model")
+        """Clean up resources with aggressive memory management."""
+        if self.model is None and self.processor is None:
+            self.logger.info("No models to clean up")
+            return
+        
+        self.logger.info("Unloading Voxtral model")
+        
+        try:
+            # Move model to CPU first if it's on GPU (frees GPU memory immediately)
+            if self.model is not None and self.device == "cuda":
+                try:
+                    # Move to CPU to free GPU memory
+                    self.model = self.model.to('cpu')
+                    self.logger.debug("Model moved to CPU")
+                except Exception as e:
+                    self.logger.warning(f"Could not move model to CPU: {e}")
+            
+            # Delete processor first (it may hold references to model components)
+            if self.processor is not None:
+                del self.processor
+                self.processor = None
+                self.logger.debug("Processor deleted")
+            
+            # Delete model
+            if self.model is not None:
+                del self.model
+                self.model = None
+                self.logger.debug("Model deleted")
+            
+            # Force garbage collection BEFORE GPU operations
+            import gc
+            gc.collect()
+            
+            # GPU-specific cleanup
+            if self.device == "cuda" and torch.cuda.is_available():
+                # Empty cache and synchronize
+                torch.cuda.empty_cache()
+                torch.cuda.synchronize()
+                
+                # Optional: more aggressive cleanup
+                torch.cuda.ipc_collect()
+                
+                # Log memory stats
+                if torch.cuda.is_available():
+                    allocated = torch.cuda.memory_allocated() / 1024**3
+                    reserved = torch.cuda.memory_reserved() / 1024**3
+                    self.logger.info(f"GPU memory after cleanup - Allocated: {allocated:.2f}GB, Reserved: {reserved:.2f}GB")
+            
+            self.logger.info("Cleanup completed successfully")
+            
+        except Exception as e:
+            self.logger.error(f"Error during cleanup: {e}")
+            # Ensure references are cleared even if cleanup fails
             self.model = None
             self.processor = None
-            
-            # Clear GPU cache if using CUDA
-            if self.device == "cuda" and torch.cuda.is_available():
-                torch.cuda.empty_cache()
-                
-            self.logger.info("Cleanup completed")
 
 # %% ../nbs/plugin.ipynb 5
 @patch
@@ -450,9 +498,13 @@ def execute_stream(
             generation_kwargs["temperature"] = exec_config.get("temperature", 1.0)
             generation_kwargs["top_p"] = exec_config.get("top_p", 0.95)
         
-        # Start generation in a separate thread
-        thread = Thread(target=self.model.generate, kwargs=generation_kwargs)
-        thread.start()
+        # Start generation in a separate thread with torch.no_grad()               
+        def generate_with_no_grad():                                               
+          with torch.no_grad():                                                  
+              self.model.generate(**generation_kwargs)                           
+        
+        thread = Thread(target=generate_with_no_grad)                              
+        thread.start() 
         
         # Collect generated text
         generated_text = ""
@@ -462,6 +514,9 @@ def execute_stream(
         
         # Wait for generation to complete
         thread.join()
+
+        # Clean up tensors immediately
+        del inputs
         
         # Clear GPU cache if using CUDA
         if self.device == "cuda" and torch.cuda.is_available():
