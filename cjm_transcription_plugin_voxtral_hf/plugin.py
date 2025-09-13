@@ -95,7 +95,7 @@ class VoxtralHFPlugin(PluginInterface):
                     "type": ["string", "null"],
                     "default": "en",
                     "description": "Language code for transcription (e.g., 'en', 'es', 'fr')",
-                    "examples": ["en", "es", "fr", "de", "it", "pt", "nl", "pl", "ru", "zh", "ja", "ko"]
+                    "examples": ['ar', 'nl', 'en', 'fr', 'de', 'hi', 'it', 'pt', 'es']
                 },
                 "max_new_tokens": {
                     "type": "integer",
