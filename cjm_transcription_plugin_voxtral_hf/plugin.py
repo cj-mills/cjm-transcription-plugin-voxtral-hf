@@ -27,11 +27,11 @@ try:
 except ImportError:
     VOXTRAL_AVAILABLE = False
     
-from cjm_transcription_plugin_system.plugin_interface import PluginInterface
+from cjm_transcription_plugin_system.plugin_interface import TranscriptionPlugin
 from cjm_transcription_plugin_system.core import AudioData, TranscriptionResult
 
 # %% ../nbs/plugin.ipynb 4
-class VoxtralHFPlugin(PluginInterface):
+class VoxtralHFPlugin(TranscriptionPlugin):
     """Mistral Voxtral transcription plugin via Hugging Face Transformers."""
     
     def __init__(self):
