@@ -430,7 +430,7 @@ class VoxtralHFPlugin(TranscriptionPlugin):
             self.model = None
             self.processor = None
 
-# %% ../nbs/plugin.ipynb 5
+# %% ../nbs/plugin.ipynb 6
 @patch
 def supports_streaming(
     self:VoxtralHFPlugin
@@ -444,18 +444,7 @@ def execute_stream(
     audio: Union[AudioData, str, Path],  # Audio data or path to audio file
     **kwargs  # Additional plugin-specific parameters
 ) -> Generator[str, None, TranscriptionResult]:  # Yields text chunks, returns final result
-    """Stream transcription results chunk by chunk.
-    
-    Args:
-        audio: Audio data or path to audio file
-        **kwargs: Additional plugin-specific parameters
-        
-    Yields:
-        str: Partial transcription text chunks as they become available
-        
-    Returns:
-        TranscriptionResult: Final complete transcription with metadata
-    """
+    """Stream transcription results chunk by chunk."""
     # Load model if not already loaded
     self._load_model()
     

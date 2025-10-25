@@ -63,19 +63,7 @@ def execute_stream(
     audio: Union[AudioData, str, Path],  # Audio data or path to audio file
     **kwargs  # Additional plugin-specific parameters
 ) -> Generator[str, None, TranscriptionResult]:  # Yields text chunks, returns final result
-    """
-    Stream transcription results chunk by chunk.
-    
-    Args:
-        audio: Audio data or path to audio file
-        **kwargs: Additional plugin-specific parameters
-        
-    Yields:
-        str: Partial transcription text chunks as they become available
-        
-    Returns:
-        TranscriptionResult: Final complete transcription with metadata
-    """
+    "Stream transcription results chunk by chunk."
 ```
 
 #### Classes
