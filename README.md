@@ -124,6 +124,16 @@ class VoxtralHFPlugin:
         ) -> VoxtralHFPluginConfig:  # Current configuration dataclass
         "Return current configuration."
     
+    def get_config_dataclass() -> VoxtralHFPluginConfig: # Configuration dataclass
+            """Return dataclass describing the plugin's configuration options."""
+            return VoxtralHFPluginConfig
+        
+        def initialize(
+            self,
+            config: Optional[Any] = None  # Configuration dataclass, dict, or None
+        ) -> None
+        "Return dataclass describing the plugin's configuration options."
+    
     def initialize(
             self,
             config: Optional[Any] = None  # Configuration dataclass, dict, or None

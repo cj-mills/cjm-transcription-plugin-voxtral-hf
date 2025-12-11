@@ -189,6 +189,11 @@ class VoxtralHFPlugin(TranscriptionPlugin):
     ) -> VoxtralHFPluginConfig:  # Current configuration dataclass
         """Return current configuration."""
         return self.config
+
+    @staticmethod
+    def get_config_dataclass() -> VoxtralHFPluginConfig: # Configuration dataclass
+        """Return dataclass describing the plugin's configuration options."""
+        return VoxtralHFPluginConfig
     
     def initialize(
         self,
