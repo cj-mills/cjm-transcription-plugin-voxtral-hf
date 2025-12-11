@@ -42,6 +42,7 @@ Detailed documentation for each module in the project:
 
 ``` python
 from cjm_transcription_plugin_voxtral_hf.plugin import (
+    VoxtralHFPluginConfig,
     VoxtralHFPlugin
 )
 ```
@@ -52,7 +53,7 @@ from cjm_transcription_plugin_voxtral_hf.plugin import (
 @patch
 def supports_streaming(
     self:VoxtralHFPlugin
-) -> bool
+) -> bool:  # True if streaming is supported
     "Check if this plugin supports streaming transcription."
 ```
 
@@ -69,77 +70,76 @@ def execute_stream(
 #### Classes
 
 ``` python
+@dataclass
+class VoxtralHFPluginConfig:
+    "Configuration for Voxtral HF transcription plugin."
+    
+    model_id: str = field(...)
+    device: str = field(...)
+    dtype: str = field(...)
+    language: Optional[str] = field(...)
+    max_new_tokens: int = field(...)
+    do_sample: bool = field(...)
+    temperature: float = field(...)
+    top_p: float = field(...)
+    streaming: bool = field(...)
+    trust_remote_code: bool = field(...)
+    cache_dir: Optional[str] = field(...)
+    compile_model: bool = field(...)
+    load_in_8bit: bool = field(...)
+    load_in_4bit: bool = field(...)
+```
+
+``` python
 class VoxtralHFPlugin:
     def __init__(self):
         """Initialize the Voxtral HF plugin with default configuration."""
         self.logger = logging.getLogger(f"{__name__}.{type(self).__name__}")
-        self.config = {}
-        self.model = None
-        self.processor = None
-        self.device = None
-        self.dtype = None
-    
-    @property
-    def name(
-        self
-    ) -> str:  # Returns the plugin name
+        self.config: VoxtralHFPluginConfig = None
     "Mistral Voxtral transcription plugin via Hugging Face Transformers."
     
     def __init__(self):
             """Initialize the Voxtral HF plugin with default configuration."""
             self.logger = logging.getLogger(f"{__name__}.{type(self).__name__}")
-            self.config = {}
-            self.model = None
-            self.processor = None
-            self.device = None
-            self.dtype = None
-        
-        @property
-        def name(
-            self
-        ) -> str:  # Returns the plugin name
+            self.config: VoxtralHFPluginConfig = None
         "Initialize the Voxtral HF plugin with default configuration."
     
     def name(
             self
-        ) -> str:  # Returns the plugin name
+        ) -> str:  # Plugin name identifier
         "Get the plugin name identifier."
     
     def version(
             self
-        ) -> str:  # Returns the plugin version
+        ) -> str:  # Plugin version string
         "Get the plugin version string."
     
     def supported_formats(
             self
-        ) -> List[str]:  # Returns list of supported audio formats
+        ) -> List[str]:  # List of supported audio formats
         "Get the list of supported audio file formats."
-    
-    def get_config_schema(
-        ) -> Dict[str, Any]:  # Returns the configuration schema dictionary
-        "Return configuration schema for Voxtral HF."
     
     def get_current_config(
             self
-        ) -> Dict[str, Any]:  # Returns the current configuration dictionary
+        ) -> VoxtralHFPluginConfig:  # Current configuration dataclass
         "Return current configuration."
     
     def initialize(
             self,
-            config: Optional[Dict[str, Any]] = None  # Configuration dictionary to initialize the plugin
+            config: Optional[Any] = None  # Configuration dataclass, dict, or None
         ) -> None
         "Initialize the plugin with configuration."
     
     def execute(
             self,
             audio: Union[AudioData, str, Path],  # Audio data or path to audio file to transcribe
-            **kwargs #  Additional arguments to override config
-        ) -> TranscriptionResult:  # Returns transcription result with text and metadata
+            **kwargs  # Additional arguments to override config
+        ) -> TranscriptionResult:  # Transcription result with text and metadata
         "Transcribe audio using Voxtral."
     
     def is_available(
             self
-        ) -> bool:  # Returns True if Voxtral and its dependencies are available
+        ) -> bool:  # True if Voxtral and its dependencies are available
         "Check if Voxtral is available."
     
     def cleanup(
