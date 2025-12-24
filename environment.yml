@@ -1,0 +1,47 @@
+# Environment for cjm-transcription-plugin-voxtral-hf
+# Provides Voxtral via Hugging Face Transformers with PyTorch CUDA support
+name: cjm-transcription-plugin-voxtral-hf
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  # Python version
+  - python=3.11
+
+  # System dependencies (conda-managed for proper linking)
+  - ffmpeg
+
+  # Pip dependencies
+  - pip
+  - pip:
+    # PyTorch with CUDA (adjust for target cuda version as needed)
+    - torch
+    - torchaudio
+
+    # Core plugin infrastructure
+    - cjm-plugin-system
+    - cjm-transcription-plugin-system
+
+    # Voxtral/Transformers dependencies
+    - transformers
+    - accelerate
+    - librosa
+    - mistral-common[audio]
+
+    # Audio processing
+    - soundfile
+    - numpy
+
+    # FFmpeg utilities
+    - cjm-ffmpeg-utils
+
+    # Utilities
+    - fastcore
+
+    # Worker dependencies (FastAPI, uvicorn, psutil, httpx)
+    - fastapi
+    - uvicorn
+    - psutil
+    - httpx

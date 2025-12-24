@@ -32,7 +32,7 @@ except ImportError:
 from cjm_transcription_plugin_system.plugin_interface import TranscriptionPlugin
 from cjm_transcription_plugin_system.core import AudioData, TranscriptionResult
 from cjm_plugin_system.utils.validation import (
-    dict_to_config, config_to_dict, validate_config,
+    dict_to_config, config_to_dict, validate_config, dataclass_to_jsonschema,
     SCHEMA_TITLE, SCHEMA_DESC, SCHEMA_MIN, SCHEMA_MAX, SCHEMA_ENUM
 )
 
@@ -164,31 +164,29 @@ class VoxtralHFPlugin(TranscriptionPlugin):
         self.dtype = None
     
     @property
-    def name(
-        self
-    ) -> str:  # Plugin name identifier
+    def name(self) -> str: # Plugin name identifier
         """Get the plugin name identifier."""
         return "voxtral_hf"
     
     @property
-    def version(
-        self
-    ) -> str:  # Plugin version string
+    def version(self) -> str: # Plugin version string
         """Get the plugin version string."""
         return "1.0.0"
     
     @property
-    def supported_formats(
-        self
-    ) -> List[str]:  # List of supported audio formats
+    def supported_formats(self) -> List[str]: # List of supported audio formats
         """Get the list of supported audio file formats."""
         return ["wav", "mp3", "flac", "m4a", "ogg", "webm", "mp4", "avi", "mov"]
 
-    def get_current_config(
-        self
-    ) -> VoxtralHFPluginConfig:  # Current configuration dataclass
-        """Return current configuration."""
-        return self.config
+    def get_current_config(self) -> Dict[str, Any]: # Current configuration as dictionary
+        """Return current configuration state."""
+        if not self.config:
+            return {}
+        return config_to_dict(self.config)
+
+    def get_config_schema(self) -> Dict[str, Any]: # JSON Schema for configuration
+        """Return JSON Schema for UI generation."""
+        return dataclass_to_jsonschema(VoxtralHFPluginConfig)
 
     @staticmethod
     def get_config_dataclass() -> VoxtralHFPluginConfig: # Configuration dataclass
@@ -197,18 +195,37 @@ class VoxtralHFPlugin(TranscriptionPlugin):
     
     def initialize(
         self,
-        config: Optional[Any] = None  # Configuration dataclass, dict, or None
+        config: Optional[Any] = None # Configuration dataclass, dict, or None
     ) -> None:
-        """Initialize the plugin with configuration."""
-        # Handle config input
-        if config is None:
-            self.config = VoxtralHFPluginConfig()
-        elif isinstance(config, VoxtralHFPluginConfig):
-            self.config = config
-        elif isinstance(config, dict):
-            self.config = dict_to_config(VoxtralHFPluginConfig, config, validate=True)
-        else:
-            raise TypeError(f"Expected VoxtralHFPluginConfig, dict, or None, got {type(config).__name__}")
+        """Initialize or re-configure the plugin (idempotent)."""
+        # Parse new config
+        new_config = dict_to_config(VoxtralHFPluginConfig, config or {})
+        
+        # Check for changes if already running
+        if self.config:
+            # If the model changed, unload old model
+            if self.config.model_id != new_config.model_id:
+                self.logger.info(f"Config change: Model {self.config.model_id} -> {new_config.model_id}")
+                self._unload_model()
+            
+            # If device changed, unload
+            if self.config.device != new_config.device:
+                self.logger.info(f"Config change: Device {self.config.device} -> {new_config.device}")
+                self._unload_model()
+            
+            # If dtype changed, unload
+            if self.config.dtype != new_config.dtype:
+                self.logger.info(f"Config change: Dtype {self.config.dtype} -> {new_config.dtype}")
+                self._unload_model()
+            
+            # If quantization settings changed, unload
+            if (self.config.load_in_8bit != new_config.load_in_8bit or
+                self.config.load_in_4bit != new_config.load_in_4bit):
+                self.logger.info("Config change: Quantization settings changed")
+                self._unload_model()
+        
+        # Apply new config
+        self.config = new_config
         
         # Set device
         if self.config.device == "auto":
@@ -232,9 +249,45 @@ class VoxtralHFPlugin(TranscriptionPlugin):
         
         self.logger.info(f"Initialized Voxtral HF plugin with model '{self.config.model_id}' on device '{self.device}' with dtype '{self.dtype}'")
     
-    def _load_model(
-        self
-    ) -> None:
+    def _unload_model(self) -> None:
+        """Unload the current model and free resources."""
+        if self.model is None and self.processor is None:
+            return
+        
+        self.logger.info("Unloading Voxtral model for reconfiguration")
+        
+        try:
+            # Move model to CPU first if it's on GPU
+            if self.model is not None and self.device == "cuda":
+                try:
+                    self.model = self.model.to('cpu')
+                except Exception as e:
+                    self.logger.warning(f"Could not move model to CPU: {e}")
+            
+            # Delete processor and model
+            if self.processor is not None:
+                del self.processor
+                self.processor = None
+            
+            if self.model is not None:
+                del self.model
+                self.model = None
+            
+            # Force garbage collection
+            import gc
+            gc.collect()
+            
+            # GPU-specific cleanup
+            if self.device == "cuda" and torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                torch.cuda.synchronize()
+                
+        except Exception as e:
+            self.logger.error(f"Error during model unload: {e}")
+            self.model = None
+            self.processor = None
+    
+    def _load_model(self) -> None:
         """Load the Voxtral model and processor (lazy loading)."""
         if self.model is None or self.processor is None:
             try:
@@ -279,8 +332,8 @@ class VoxtralHFPlugin(TranscriptionPlugin):
     
     def _prepare_audio(
         self,
-        audio: Union[AudioData, str, Path]  # Audio data, file path, or Path object to prepare
-    ) -> str:  # Path to the prepared audio file
+        audio: Union[AudioData, str, Path] # Audio data, file path, or Path object to prepare
+    ) -> str: # Path to the prepared audio file
         """Prepare audio for Voxtral processing."""
         if isinstance(audio, (str, Path)):
             # Already a file path
@@ -310,11 +363,20 @@ class VoxtralHFPlugin(TranscriptionPlugin):
         else:
             raise ValueError(f"Unsupported audio input type: {type(audio)}")
     
+    def _save_to_db(
+        self,
+        result: TranscriptionResult # Transcription result to save
+    ) -> None:
+        """Save transcription result to database (placeholder)."""
+        # Placeholder for DB logic
+        # Implementation will use self.db_path which can be injected via config or environment
+        pass
+    
     def execute(
         self,
-        audio: Union[AudioData, str, Path],  # Audio data or path to audio file to transcribe
-        **kwargs  # Additional arguments to override config
-    ) -> TranscriptionResult:  # Transcription result with text and metadata
+        audio: Union[AudioData, str, Path], # Audio data or path to audio file to transcribe
+        **kwargs # Additional arguments to override config
+    ) -> TranscriptionResult: # Transcription result with text and metadata
         """Transcribe audio using Voxtral."""
         # Load model if not already loaded
         self._load_model()
@@ -390,6 +452,9 @@ class VoxtralHFPlugin(TranscriptionPlugin):
                 }
             )
             
+            # Save to database (placeholder)
+            self._save_to_db(transcription_result)
+            
             self.logger.info(f"Transcription completed: {len(result_text.split())} words")
             return transcription_result
             
@@ -401,15 +466,11 @@ class VoxtralHFPlugin(TranscriptionPlugin):
                 except Exception:
                     pass
 
-    def is_available(
-        self
-    ) -> bool:  # True if Voxtral and its dependencies are available
+    def is_available(self) -> bool: # True if Voxtral and its dependencies are available
         """Check if Voxtral is available."""
         return VOXTRAL_AVAILABLE
     
-    def cleanup(
-        self
-    ) -> None:
+    def cleanup(self) -> None:
         """Clean up resources with aggressive memory management."""
         if self.model is None and self.processor is None:
             self.logger.info("No models to clean up")
