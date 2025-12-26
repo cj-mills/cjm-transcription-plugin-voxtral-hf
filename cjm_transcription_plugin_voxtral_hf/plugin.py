@@ -6,7 +6,12 @@
 __all__ = ['VoxtralHFPluginConfig', 'VoxtralHFPlugin']
 
 # %% ../nbs/plugin.ipynb 3
+import sqlite3
 import json
+import time
+import os
+import sys
+from uuid import uuid4
 import logging
 from pathlib import Path
 from dataclasses import dataclass, field
@@ -363,14 +368,57 @@ class VoxtralHFPlugin(TranscriptionPlugin):
         else:
             raise ValueError(f"Unsupported audio input type: {type(audio)}")
     
-    def _save_to_db(
-        self,
-        result: TranscriptionResult # Transcription result to save
-    ) -> None:
-        """Save transcription result to database (placeholder)."""
-        # Placeholder for DB logic
-        # Implementation will use self.db_path which can be injected via config or environment
-        pass
+    def _get_db_path(self):
+        # Replicates the logic from meta.py to find the DB in the env
+        # This ensures the Worker finds the DB regardless of where it was launched
+        base_path = os.path.dirname(os.path.dirname(sys.executable))
+        data_dir = os.path.join(base_path, "data")
+        os.makedirs(data_dir, exist_ok=True)
+        return os.path.join(data_dir, "transcriptions.db")
+
+    def _init_db(self):
+        """Ensure table exists."""
+        db_path = self._get_db_path()
+        with sqlite3.connect(db_path) as con:
+            con.execute("""
+                CREATE TABLE IF NOT EXISTS transcriptions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    job_id TEXT,
+                    audio_path TEXT,
+                    text TEXT,
+                    segments JSON,
+                    metadata JSON,
+                    created_at REAL
+                )
+            """)
+            con.execute("CREATE INDEX IF NOT EXISTS idx_job_id ON transcriptions(job_id)")
+
+    def _save_to_db(self, result: TranscriptionResult, audio_path: str, **kwargs) -> None:
+        """Save result to SQLite."""
+        try:
+            self._init_db()
+            db_path = self._get_db_path()
+            
+            # Extract a job_id if provided, else gen random
+            job_id = kwargs.get("job_id", str(uuid4()))
+            
+            # Serialize complex objects
+            segments_json = json.dumps(result.segments) if result.segments else None
+            metadata_json = json.dumps(result.metadata)
+            
+            with sqlite3.connect(db_path) as con:
+                con.execute(
+                    """
+                    INSERT INTO transcriptions 
+                    (job_id, audio_path, text, segments, metadata, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (job_id, str(audio_path), result.text, segments_json, metadata_json, time.time())
+                )
+                self.logger.info(f"Saved result to DB (Job: {job_id})")
+                
+        except Exception as e:
+            self.logger.error(f"Failed to save to DB: {e}")
     
     def execute(
         self,
@@ -451,9 +499,13 @@ class VoxtralHFPlugin(TranscriptionPlugin):
                     "dtype": str(self.dtype),
                 }
             )
+
+            # Capture original path for DB
+            original_path = str(audio)
+            if hasattr(audio, 'to_temp_file'): original_path = "in_memory_data"
             
-            # Save to database (placeholder)
-            self._save_to_db(transcription_result)
+            # Save to database
+            self._save_to_db(transcription_result, original_path, **kwargs)
             
             self.logger.info(f"Transcription completed: {len(result_text.split())} words")
             return transcription_result
