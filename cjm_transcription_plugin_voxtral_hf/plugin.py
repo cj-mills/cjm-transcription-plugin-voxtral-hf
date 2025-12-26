@@ -40,6 +40,9 @@ from cjm_plugin_system.utils.validation import (
     dict_to_config, config_to_dict, validate_config, dataclass_to_jsonschema,
     SCHEMA_TITLE, SCHEMA_DESC, SCHEMA_MIN, SCHEMA_MAX, SCHEMA_ENUM
 )
+from cjm_transcription_plugin_voxtral_hf.meta import (
+    get_plugin_metadata
+)
 
 # %% ../nbs/plugin.ipynb 4
 @dataclass
@@ -367,18 +370,10 @@ class VoxtralHFPlugin(TranscriptionPlugin):
                 return tmp_file.name
         else:
             raise ValueError(f"Unsupported audio input type: {type(audio)}")
-    
-    def _get_db_path(self):
-        # Replicates the logic from meta.py to find the DB in the env
-        # This ensures the Worker finds the DB regardless of where it was launched
-        base_path = os.path.dirname(os.path.dirname(sys.executable))
-        data_dir = os.path.join(base_path, "data")
-        os.makedirs(data_dir, exist_ok=True)
-        return os.path.join(data_dir, "transcriptions.db")
 
     def _init_db(self):
         """Ensure table exists."""
-        db_path = self._get_db_path()
+        db_path = get_plugin_metadata()["db_path"]
         with sqlite3.connect(db_path) as con:
             con.execute("""
                 CREATE TABLE IF NOT EXISTS transcriptions (
@@ -397,7 +392,7 @@ class VoxtralHFPlugin(TranscriptionPlugin):
         """Save result to SQLite."""
         try:
             self._init_db()
-            db_path = self._get_db_path()
+            db_path = get_plugin_metadata()["db_path"]
             
             # Extract a job_id if provided, else gen random
             job_id = kwargs.get("job_id", str(uuid4()))
