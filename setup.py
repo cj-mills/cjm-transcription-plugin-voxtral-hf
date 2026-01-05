@@ -58,9 +58,6 @@ setuptools.setup(
     entry_points = {
         'console_scripts': cfg.get('console_scripts','').split(),
         'nbdev': [f'{cfg.get("lib_path")}={cfg.get("lib_path")}._modidx:d'],
-        'transcription.plugins': [
-            'voxtral_hf = cjm_transcription_plugin_voxtral_hf.plugin:VoxtralHFPlugin',
-        ]
     },
     **setup_cfg)
 
