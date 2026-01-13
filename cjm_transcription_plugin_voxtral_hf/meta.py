@@ -13,16 +13,33 @@ from typing import Any, Dict
 # %% ../nbs/meta.ipynb 4
 def get_plugin_metadata() -> Dict[str, Any]: # Plugin metadata for manifest generation
     """Return metadata required to register this plugin with the PluginManager."""
-    # Calculate default DB path relative to the environment
+    # Fallback base path (current behavior for backward compatibility)
     base_path = os.path.dirname(os.path.dirname(sys.executable))
-    data_dir = os.path.join(base_path, "data")
+    
+    # Use CJM config if available, else fallback to env-relative paths
+    cjm_data_dir = os.environ.get("CJM_DATA_DIR")
+    cjm_models_dir = os.environ.get("CJM_MODELS_DIR")
+    
+    # Plugin data directory
+    plugin_name = "cjm-transcription-plugin-voxtral-hf"
+    if cjm_data_dir:
+        data_dir = os.path.join(cjm_data_dir, plugin_name)
+    else:
+        data_dir = os.path.join(base_path, "data")
+    
     db_path = os.path.join(data_dir, "voxtral_hf_transcriptions.db")
     
     # Ensure data directory exists
     os.makedirs(data_dir, exist_ok=True)
+    
+    # HuggingFace cache: use models_dir if configured
+    if cjm_models_dir:
+        hf_home = os.path.join(cjm_models_dir, "huggingface")
+    else:
+        hf_home = os.path.join(base_path, ".cache", "huggingface")
 
     return {
-        "name": "cjm-transcription-plugin-voxtral-hf",
+        "name": plugin_name,
         "version": "1.0.0",
         "type": "transcription",
         "category": "transcription",
@@ -47,6 +64,6 @@ def get_plugin_metadata() -> Dict[str, Any]: # Plugin metadata for manifest gene
         "env_vars": {
             "CUDA_VISIBLE_DEVICES": "0",
             "OMP_NUM_THREADS": "4",
-            "HF_HOME": os.path.join(base_path, ".cache", "huggingface")
+            "HF_HOME": hf_home
         }
     }
