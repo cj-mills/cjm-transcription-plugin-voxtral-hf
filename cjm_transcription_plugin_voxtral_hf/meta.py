@@ -9,6 +9,7 @@ __all__ = ['get_plugin_metadata']
 import os
 import sys
 from typing import Any, Dict
+from . import __version__
 
 # %% ../nbs/meta.ipynb 4
 def get_plugin_metadata() -> Dict[str, Any]: # Plugin metadata for manifest generation
@@ -40,7 +41,7 @@ def get_plugin_metadata() -> Dict[str, Any]: # Plugin metadata for manifest gene
 
     return {
         "name": plugin_name,
-        "version": "1.0.0",
+        "version": __version__,
         "type": "transcription",
         "category": "transcription",
         "interface": "cjm_transcription_plugin_system.plugin_interface.TranscriptionPlugin",
