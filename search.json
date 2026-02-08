@@ -1,0 +1,112 @@
+[
+  {
+    "objectID": "meta.html",
+    "href": "meta.html",
+    "title": "Metadata",
+    "section": "",
+    "text": "source",
+    "crumbs": [
+      "Metadata"
+    ]
+  },
+  {
+    "objectID": "meta.html#testing",
+    "href": "meta.html#testing",
+    "title": "Metadata",
+    "section": "Testing",
+    "text": "Testing\n\nimport json\n\nmetadata = get_plugin_metadata()\nprint(json.dumps(metadata, indent=2))\n\n{\n  \"name\": \"cjm-transcription-plugin-voxtral-hf\",\n  \"version\": \"0.0.18\",\n  \"type\": \"transcription\",\n  \"category\": \"transcription\",\n  \"interface\": \"cjm_transcription_plugin_system.plugin_interface.TranscriptionPlugin\",\n  \"module\": \"cjm_transcription_plugin_voxtral_hf.plugin\",\n  \"class\": \"VoxtralHFPlugin\",\n  \"python_path\": \"/opt/hostedtoolcache/Python/3.12.12/x64/bin/python\",\n  \"db_path\": \"/opt/hostedtoolcache/Python/3.12.12/x64/data/voxtral_hf_transcriptions.db\",\n  \"resources\": {\n    \"requires_gpu\": true,\n    \"min_gpu_vram_mb\": 6144,\n    \"recommended_gpu_vram_mb\": 8192,\n    \"min_system_ram_mb\": 16384\n  },\n  \"env_vars\": {\n    \"CUDA_VISIBLE_DEVICES\": \"0\",\n    \"OMP_NUM_THREADS\": \"4\",\n    \"HF_HOME\": \"/opt/hostedtoolcache/Python/3.12.12/x64/.cache/huggingface\"\n  }\n}",
+    "crumbs": [
+      "Metadata"
+    ]
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "cjm-transcription-plugin-voxtral-hf",
+    "section": "",
+    "text": "pip install cjm_transcription_plugin_voxtral_hf",
+    "crumbs": [
+      "cjm-transcription-plugin-voxtral-hf"
+    ]
+  },
+  {
+    "objectID": "index.html#install",
+    "href": "index.html#install",
+    "title": "cjm-transcription-plugin-voxtral-hf",
+    "section": "",
+    "text": "pip install cjm_transcription_plugin_voxtral_hf",
+    "crumbs": [
+      "cjm-transcription-plugin-voxtral-hf"
+    ]
+  },
+  {
+    "objectID": "index.html#project-structure",
+    "href": "index.html#project-structure",
+    "title": "cjm-transcription-plugin-voxtral-hf",
+    "section": "Project Structure",
+    "text": "Project Structure\nnbs/\n├── meta.ipynb   # Metadata introspection for the Voxtral HF plugin used by cjm-ctl to generate the registration manifest.\n└── plugin.ipynb # Plugin implementation for Mistral Voxtral transcription through Hugging Face Transformers\nTotal: 2 notebooks",
+    "crumbs": [
+      "cjm-transcription-plugin-voxtral-hf"
+    ]
+  },
+  {
+    "objectID": "index.html#module-dependencies",
+    "href": "index.html#module-dependencies",
+    "title": "cjm-transcription-plugin-voxtral-hf",
+    "section": "Module Dependencies",
+    "text": "Module Dependencies\ngraph LR\n    meta[meta&lt;br/&gt;Metadata]\n    plugin[plugin&lt;br/&gt;Voxtral HF Plugin]\n\n    plugin --&gt; meta\n1 cross-module dependencies detected",
+    "crumbs": [
+      "cjm-transcription-plugin-voxtral-hf"
+    ]
+  },
+  {
+    "objectID": "index.html#cli-reference",
+    "href": "index.html#cli-reference",
+    "title": "cjm-transcription-plugin-voxtral-hf",
+    "section": "CLI Reference",
+    "text": "CLI Reference\nNo CLI commands found in this project.",
+    "crumbs": [
+      "cjm-transcription-plugin-voxtral-hf"
+    ]
+  },
+  {
+    "objectID": "index.html#module-overview",
+    "href": "index.html#module-overview",
+    "title": "cjm-transcription-plugin-voxtral-hf",
+    "section": "Module Overview",
+    "text": "Module Overview\nDetailed documentation for each module in the project:\n\nMetadata (meta.ipynb)\n\nMetadata introspection for the Voxtral HF plugin used by cjm-ctl to generate the registration manifest.\n\n\nImport\nfrom cjm_transcription_plugin_voxtral_hf.meta import (\n    get_plugin_metadata\n)\n\n\nFunctions\ndef get_plugin_metadata() -&gt; Dict[str, Any]: # Plugin metadata for manifest generation\n    \"\"\"Return metadata required to register this plugin with the PluginManager.\"\"\"\n    # Fallback base path (current behavior for backward compatibility)\n    base_path = os.path.dirname(os.path.dirname(sys.executable))\n    \n    # Use CJM config if available, else fallback to env-relative paths\n    cjm_data_dir = os.environ.get(\"CJM_DATA_DIR\")\n    cjm_models_dir = os.environ.get(\"CJM_MODELS_DIR\")\n    \n    # Plugin data directory\n    plugin_name = \"cjm-transcription-plugin-voxtral-hf\"\n    if cjm_data_dir\n    \"Return metadata required to register this plugin with the PluginManager.\"\n\n\n\nVoxtral HF Plugin (plugin.ipynb)\n\nPlugin implementation for Mistral Voxtral transcription through Hugging Face Transformers\n\n\nImport\nfrom cjm_transcription_plugin_voxtral_hf.plugin import (\n    VoxtralHFPluginConfig,\n    VoxtralHFPlugin\n)\n\n\nFunctions\n@patch\ndef supports_streaming(\n    self:VoxtralHFPlugin\n) -&gt; bool:  # True if streaming is supported\n    \"Check if this plugin supports streaming transcription.\"\n@patch\ndef execute_stream(\n    self:VoxtralHFPlugin,\n    audio: Union[AudioData, str, Path],  # Audio data or path to audio file\n    **kwargs  # Additional plugin-specific parameters\n) -&gt; Generator[str, None, TranscriptionResult]:  # Yields text chunks, returns final result\n    \"Stream transcription results chunk by chunk.\"\n\n\nClasses\n@dataclass\nclass VoxtralHFPluginConfig:\n    \"Configuration for Voxtral HF transcription plugin.\"\n    \n    model_id: str = field(...)\n    device: str = field(...)\n    dtype: str = field(...)\n    language: Optional[str] = field(...)\n    max_new_tokens: int = field(...)\n    do_sample: bool = field(...)\n    temperature: float = field(...)\n    top_p: float = field(...)\n    streaming: bool = field(...)\n    trust_remote_code: bool = field(...)\n    cache_dir: Optional[str] = field(...)\n    compile_model: bool = field(...)\n    load_in_8bit: bool = field(...)\n    load_in_4bit: bool = field(...)\nclass VoxtralHFPlugin:\n    def __init__(self):\n        \"\"\"Initialize the Voxtral HF plugin with default configuration.\"\"\"\n        self.logger = logging.getLogger(f\"{__name__}.{type(self).__name__}\")\n        self.config: VoxtralHFPluginConfig = None\n    \"Mistral Voxtral transcription plugin via Hugging Face Transformers.\"\n    \n    def __init__(self):\n            \"\"\"Initialize the Voxtral HF plugin with default configuration.\"\"\"\n            self.logger = logging.getLogger(f\"{__name__}.{type(self).__name__}\")\n            self.config: VoxtralHFPluginConfig = None\n        \"Initialize the Voxtral HF plugin with default configuration.\"\n    \n    def name(self) -&gt; str: # Plugin name identifier\n            \"\"\"Get the plugin name identifier.\"\"\"\n            return \"voxtral_hf\"\n        \n        @property\n        def version(self) -&gt; str: # Plugin version string\n        \"Get the plugin name identifier.\"\n    \n    def version(self) -&gt; str: # Plugin version string\n            \"\"\"Get the plugin version string.\"\"\"\n            return \"1.0.0\"\n        \n        @property\n        def supported_formats(self) -&gt; List[str]: # List of supported audio formats\n        \"Get the plugin version string.\"\n    \n    def supported_formats(self) -&gt; List[str]: # List of supported audio formats\n            \"\"\"Get the list of supported audio file formats.\"\"\"\n            return [\"wav\", \"mp3\", \"flac\", \"m4a\", \"ogg\", \"webm\", \"mp4\", \"avi\", \"mov\"]\n    \n        def get_current_config(self) -&gt; Dict[str, Any]: # Current configuration as dictionary\n        \"Get the list of supported audio file formats.\"\n    \n    def get_current_config(self) -&gt; Dict[str, Any]: # Current configuration as dictionary\n            \"\"\"Return current configuration state.\"\"\"\n            if not self.config\n        \"Return current configuration state.\"\n    \n    def get_config_schema(self) -&gt; Dict[str, Any]: # JSON Schema for configuration\n            \"\"\"Return JSON Schema for UI generation.\"\"\"\n            return dataclass_to_jsonschema(VoxtralHFPluginConfig)\n    \n        @staticmethod\n        def get_config_dataclass() -&gt; VoxtralHFPluginConfig: # Configuration dataclass\n        \"Return JSON Schema for UI generation.\"\n    \n    def get_config_dataclass() -&gt; VoxtralHFPluginConfig: # Configuration dataclass\n            \"\"\"Return dataclass describing the plugin's configuration options.\"\"\"\n            return VoxtralHFPluginConfig\n        \n        def initialize(\n            self,\n            config: Optional[Any] = None # Configuration dataclass, dict, or None\n        ) -&gt; None\n        \"Return dataclass describing the plugin's configuration options.\"\n    \n    def initialize(\n            self,\n            config: Optional[Any] = None # Configuration dataclass, dict, or None\n        ) -&gt; None\n        \"Initialize or re-configure the plugin (idempotent).\"\n    \n    def execute(\n            self,\n            audio: Union[AudioData, str, Path], # Audio data or path to audio file to transcribe\n            **kwargs # Additional arguments to override config\n        ) -&gt; TranscriptionResult: # Transcription result with text and metadata\n        \"Transcribe audio using Voxtral.\"\n    \n    def is_available(self) -&gt; bool: # True if Voxtral and its dependencies are available\n            \"\"\"Check if Voxtral is available.\"\"\"\n            return VOXTRAL_AVAILABLE\n        \n        def cleanup(self) -&gt; None\n        \"Check if Voxtral is available.\"\n    \n    def cleanup(self) -&gt; None:\n            \"\"\"Clean up resources with aggressive memory management.\"\"\"\n            if self.model is None and self.processor is None\n        \"Clean up resources with aggressive memory management.\"",
+    "crumbs": [
+      "cjm-transcription-plugin-voxtral-hf"
+    ]
+  },
+  {
+    "objectID": "plugin.html",
+    "href": "plugin.html",
+    "title": "Voxtral HF Plugin",
+    "section": "",
+    "text": "source",
+    "crumbs": [
+      "Voxtral HF Plugin"
+    ]
+  },
+  {
+    "objectID": "plugin.html#streaming-support",
+    "href": "plugin.html#streaming-support",
+    "title": "Voxtral HF Plugin",
+    "section": "Streaming Support",
+    "text": "Streaming Support\nThe execute_stream method provides real-time transcription output:\n\nYields: Partial transcription text chunks as they become available during generation\nReturns: Final TranscriptionResult with complete text and metadata after streaming completes\nParameters: Same as execute() - accepts AudioData, file path string, or Path object, plus optional kwargs to override config\nUsage: Iterate over the generator to receive text chunks, then access the return value for the final result\n\n\nsource\n\nVoxtralHFPlugin.execute_stream\n\ndef execute_stream(\n    audio:Union, # Audio data or path to audio file\n    kwargs:VAR_KEYWORD\n)-&gt;Generator: # Yields text chunks, returns final result\n\nStream transcription results chunk by chunk.\n\nsource\n\n\nVoxtralHFPlugin.supports_streaming\n\ndef supports_streaming(\n    \n)-&gt;bool: # True if streaming is supported\n\nCheck if this plugin supports streaming transcription.",
+    "crumbs": [
+      "Voxtral HF Plugin"
+    ]
+  },
+  {
+    "objectID": "plugin.html#testing-the-plugin",
+    "href": "plugin.html#testing-the-plugin",
+    "title": "Voxtral HF Plugin",
+    "section": "Testing the Plugin",
+    "text": "Testing the Plugin\n\n# Test basic functionality\nplugin = VoxtralHFPlugin()\n\n# Check availability\nprint(f\"Voxtral available: {plugin.is_available()}\")\nprint(f\"Plugin name: {plugin.name}\")\nprint(f\"Plugin version: {plugin.version}\")\nprint(f\"Supported formats: {plugin.supported_formats}\")\nprint(f\"Config class: {plugin.config_class.__name__}\")\nprint(f\"Supports streaming: {plugin.supports_streaming()}\")\n\nVoxtral available: True\nPlugin name: voxtral_hf\nPlugin version: 1.0.0\nSupported formats: ['wav', 'mp3', 'flac', 'm4a', 'ogg', 'webm', 'mp4', 'avi', 'mov']\nConfig class: VoxtralHFPluginConfig\nSupports streaming: True\n\n\n\n# Test configuration dataclass\nfrom dataclasses import fields\n\nprint(\"Available models:\")\nmodel_field = next(f for f in fields(VoxtralHFPluginConfig) if f.name == \"model_id\")\nfor model in model_field.metadata.get(SCHEMA_ENUM, []):\n    print(f\"  - {model}\")\n\nAvailable models:\n  - mistralai/Voxtral-Mini-3B-2507\n  - mistralai/Voxtral-Small-24B-2507\n\n\n\n# Test configuration validation\ntest_configs = [\n    ({\"model_id\": \"mistralai/Voxtral-Mini-3B-2507\"}, \"Valid config\"),\n    ({\"model_id\": \"invalid_model\"}, \"Invalid model\"),\n    ({\"model_id\": \"mistralai/Voxtral-Mini-3B-2507\", \"temperature\": 2.5}, \"Temperature out of range\"),\n]\n\nfor config, description in test_configs:\n    try:\n        test_cfg = dict_to_config(VoxtralHFPluginConfig, config, validate=True)\n        print(f\"{description}: Valid=True\")\n    except ValueError as e:\n        print(f\"{description}: Valid=False\")\n        print(f\"  Error: {str(e)[:100]}\")\n\nValid config: Valid=True\nInvalid model: Valid=False\n  Error: model_id: 'invalid_model' is not one of ['mistralai/Voxtral-Mini-3B-2507', 'mistralai/Voxtral-Small-\nTemperature out of range: Valid=False\n  Error: temperature: 2.5 is greater than maximum 2.0\n\n\n\n# Test initialization and get_current_config (returns dict now)\nplugin.initialize({\"model_id\": \"mistralai/Voxtral-Mini-3B-2507\", \"device\": \"cpu\"})\ncurrent_config = plugin.get_current_config()\nprint(f\"Current config (dict): model_id={current_config['model_id']}\")\n\nCurrent config (dict): model_id=mistralai/Voxtral-Mini-3B-2507\n\n\n\n# Test get_config_schema for UI generation\nimport json\n\nschema = plugin.get_config_schema()\nprint(\"JSON Schema for VoxtralHFPluginConfig:\")\nprint(f\"  Name: {schema['name']}\")\nprint(f\"  Properties count: {len(schema['properties'])}\")\nprint(f\"  Model field enum: {schema['properties']['model_id'].get('enum', [])}\")\nprint(f\"\\nSample properties:\")\nprint(json.dumps({k: v for k, v in list(schema['properties'].items())[:3]}, indent=2))\n\nJSON Schema for VoxtralHFPluginConfig:\n  Name: VoxtralHFPluginConfig\n  Properties count: 14\n  Model field enum: ['mistralai/Voxtral-Mini-3B-2507', 'mistralai/Voxtral-Small-24B-2507']\n\nSample properties:\n{\n  \"model_id\": {\n    \"type\": \"string\",\n    \"title\": \"Model ID\",\n    \"description\": \"Voxtral model to use. Mini is faster, Small is more accurate.\",\n    \"enum\": [\n      \"mistralai/Voxtral-Mini-3B-2507\",\n      \"mistralai/Voxtral-Small-24B-2507\"\n    ],\n    \"default\": \"mistralai/Voxtral-Mini-3B-2507\"\n  },\n  \"device\": {\n    \"type\": \"string\",\n    \"title\": \"Device\",\n    \"description\": \"Device for inference (auto will use CUDA if available)\",\n    \"enum\": [\n      \"auto\",\n      \"cpu\",\n      \"cuda\"\n    ],\n    \"default\": \"auto\"\n  },\n  \"dtype\": {\n    \"type\": \"string\",\n    \"title\": \"Data Type\",\n    \"description\": \"Data type for model weights (auto will use bfloat16 on GPU, float32 on CPU)\",\n    \"enum\": [\n      \"auto\",\n      \"bfloat16\",\n      \"float16\",\n      \"float32\"\n    ],\n    \"default\": \"auto\"\n  }\n}",
+    "crumbs": [
+      "Voxtral HF Plugin"
+    ]
+  }
+]
