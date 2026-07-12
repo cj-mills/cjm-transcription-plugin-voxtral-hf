@@ -1,9 +1,0 @@
-project:
-  output-dir: _docs
-
-website:
-  title: "cjm-capability-voxtral-hf"
-  site-url: "https://cj-mills.github.io/cjm-capability-voxtral-hf"
-  description: "A Mistral Voxtral speech-to-text capability for the cjm-substrate runtime that provides local transcription through 🤗 Transformers with configurable model selection and parameter control."
-  repo-branch: main
-  repo-url: "https://github.com/cj-mills/cjm-capability-voxtral-hf"

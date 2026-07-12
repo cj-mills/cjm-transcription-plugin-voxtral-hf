@@ -16,10 +16,7 @@ dependencies = ['fastcore', 'cjm-substrate>=0.0.51', 'cjm-capability-primitives>
 
 [project.urls]
 Repository = "https://github.com/cj-mills/cjm-capability-voxtral-hf"
-Documentation = "https://cj-mills.github.io/cjm-capability-voxtral-hf"
 
-[project.entry-points.nbdev]
-cjm_capability_voxtral_hf = "cjm_capability_voxtral_hf._modidx:d"
 
 [tool.setuptools.dynamic]
 version = {attr = "cjm_capability_voxtral_hf.__version__"}
@@ -27,4 +24,3 @@ version = {attr = "cjm_capability_voxtral_hf.__version__"}
 [tool.setuptools.packages.find]
 include = ["cjm_capability_voxtral_hf*"]
 
-[tool.nbdev]
