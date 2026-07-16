@@ -26,7 +26,7 @@ from cjm_substrate_hf_utils.cache_config import HFCacheConfig
 from cjm_substrate_hf_utils.download import snapshot_download_with_progress
 from cjm_substrate_hf_utils.loading import load_pretrained_with_oom
 from cjm_substrate_torch_utils.memory import release_model
-from cjm_substrate_torch_utils.oom import cuda_oom_to_capability_resource_error
+from cjm_substrate_torch_utils.oom import cuda_oom_to_capability_resource_error, is_cuda_oom
 
 try:
     from transformers import VoxtralForConditionalGeneration, AutoProcessor
@@ -277,7 +277,11 @@ class VoxtralHFCapability(ToolCapability):
                         **inputs,
                         **generation_kwargs
                     )
-        except torch.cuda.OutOfMemoryError as e:
+        except Exception as e:
+            # is_cuda_oom: caching-allocator subclass OR driver-level RuntimeError OOM;
+            # non-OOM errors propagate unchanged for the substrate's classifier.
+            if not is_cuda_oom(e):
+                raise
             raise cuda_oom_to_capability_resource_error(
                 e, label=f"Voxtral inference (model={model_id!r})",
             ) from e
@@ -426,12 +430,13 @@ class VoxtralHFCapability(ToolCapability):
             self.logger.info("Voxtral model loaded successfully")
         except CapabilityResourceError:
             raise  # already typed by load_pretrained_with_oom
-        except torch.cuda.OutOfMemoryError as e:
-            # Defensive: OOM outside the wrapped model load (processor / compile).
-            raise cuda_oom_to_capability_resource_error(
-                e, label=f"loading Voxtral model {self.config.model_id!r}",
-            ) from e
         except Exception as e:
+            # Defensive: OOM outside the wrapped model load (processor / compile),
+            # incl. driver-level RuntimeError OOM (is_cuda_oom) -> typed for CR-7.
+            if is_cuda_oom(e):
+                raise cuda_oom_to_capability_resource_error(
+                    e, label=f"loading Voxtral model {self.config.model_id!r}",
+                ) from e
             raise CapabilityFatalError(f"Failed to load Voxtral model: {e}") from e
 
     def _prepare_audio(
