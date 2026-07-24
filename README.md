@@ -6,7 +6,8 @@ A Mistral Voxtral speech-to-text capability for the cjm-substrate runtime that p
 
 ## Modules
 
-- **`cjm_capability_voxtral_hf.capability`**
+- **`cjm_capability_voxtral_hf.capability`** — Capability implementation for Mistral Voxtral transcription through Hugging Face Transformers (Option C, stage 8: pure compute).
+- **`examples/hf-testing.ipynb`**
 
 ## API
 
@@ -17,4 +18,4 @@ A Mistral Voxtral speech-to-text capability for the cjm-substrate runtime that p
 
 ## Dependencies
 
-**Depends on:** `cjm-capability-primitives`, `cjm-substrate`, `hf-utils`, `torch-utils`
+**Depends on:** `accelerate`, `cjm-capability-primitives`, `cjm-substrate`, `cjm-substrate-hf-utils`, `cjm-substrate-torch-utils`, `fastcore`, `librosa`, `mistral-common`, `numpy`, `soundfile`, `torch`, `transformers`
