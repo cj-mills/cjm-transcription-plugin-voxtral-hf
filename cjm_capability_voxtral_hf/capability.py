@@ -129,6 +129,52 @@ class VoxtralHFCapabilityConfig(HFCacheConfig):
             SCHEMA_DESC: "Load model in 4-bit quantization (requires bitsandbytes)"
         }
     )
+    prompt_mode:str = field(
+        default="transcription",
+        metadata={
+            SCHEMA_TITLE: "Prompt Mode",
+            SCHEMA_DESC: "Input-preparation path: 'transcription' uses the dedicated transcription template (no prompt); 'instruct' rides the chat path (apply_chat_template) with audio + the instruct_prompt text — a different decoding surface, bench before trusting",
+            SCHEMA_ENUM: ["transcription", "instruct"]
+        }
+    )
+    instruct_prompt:str = field(
+        # The comprehensive verbatim prompt (user-authored 2026-08-01, bench-ratified
+        # over both corrected sources: marker recall 0.72/0.74 vs 0.69 for the short
+        # v1 prompt, TER better on conversational material). Single line by design —
+        # the TUI config text box is single-line.
+        default=(
+            "Transcribe this audio exactly as spoken, word for word. Preserve ALL of "
+            "the following, exactly as uttered: (1) Hesitation sounds and non-lexical "
+            "fillers: um, umm, uh, uhh, er, erm, ah, ahh, eh, mm, mmm, hmm, hm, huh, "
+            "oh, ooh, mhm, mm-hmm, uh-huh, uh-uh, nuh-uh, tsk, pfft, ugh, whew, phew, "
+            "shh, aha. (2) Discourse markers and verbal fillers: like, you know, "
+            "y'know, I mean, I guess, I think, sort of, sorta, kind of, kinda, well, "
+            "so, and, but, or, right, okay, OK, alright, now, see, look, listen, "
+            "anyway, anyways, actually, basically, literally, honestly, really, "
+            "obviously, essentially, seriously, apparently, clearly, just, pretty "
+            "much, more or less, or something, or whatever, and stuff, and all that, "
+            "at the end of the day, to be honest, if that makes sense. (3) Tag "
+            "questions and confirmation seekers: right?, you know?, yeah?, no?, "
+            "okay?, isn't it?, doesn't it?, don't you think?, know what I mean?, see "
+            "what I'm saying? (4) Backchannels and affirmations: yeah, yep, yup, yah, "
+            "nah, nope, mhm, uh-huh, sure, exactly, totally, gotcha, got it, fair "
+            "enough, for sure. (5) Disfluencies: false starts, abandoned phrases, "
+            "word and syllable repetitions (e.g., \"the the\", \"I- I- I\"), "
+            "stutters, self-corrections and repairs, mid-word cutoffs (mark with a "
+            "hyphen, e.g., \"inter- interesting\"), elongated sounds (e.g., \"sooo\", "
+            "\"weeell\"), filled and unfilled pauses. (6) Colloquial and reduced "
+            "forms as spoken: gonna, wanna, gotta, lemme, gimme, dunno, 'cause, cuz, "
+            "kinda, sorta, outta, ain't, y'all, 'em, prolly, s'pose — do not expand "
+            "these to their formal equivalents. Do not clean up, rephrase, reorder, "
+            "summarize, or omit anything. Do not correct grammar, slips of the "
+            "tongue, or mispronunciations. Do not normalize dialect or accent "
+            "features. Output only the verbatim transcript, with no commentary."
+        ),
+        metadata={
+            SCHEMA_TITLE: "Instruct Prompt",
+            SCHEMA_DESC: "Instruction text sent with the audio when prompt_mode='instruct' (ignored in 'transcription' mode); recorded config value — part of the capability's config-hash identity"
+        }
+    )
 
 
 class VoxtralHFCapability(ToolCapability):
@@ -247,14 +293,28 @@ class VoxtralHFCapability(ToolCapability):
         temperature = c.temperature
         top_p = c.top_p
 
-        # Prepare inputs
-        self.logger.info(f"Processing audio with Voxtral {model_id}")
+        # Prepare inputs. Two config-recorded prep paths (verbatim-prompt
+        # experiment): the dedicated transcription template exposes NO prompt
+        # parameter, so the instruct variant rides the chat path with an
+        # explicit instruction — a DIFFERENT decoding surface; language is
+        # only honored on the transcription path.
+        self.logger.info(f"Processing audio with Voxtral {model_id} (prompt_mode={c.prompt_mode})")
 
-        inputs = self.processor.apply_transcription_request(
-            language=language or "en",
-            audio=str(audio_path),
-            model_id=model_id
-        )
+        if c.prompt_mode == "instruct":
+            conversation = [{
+                "role": "user",
+                "content": [
+                    {"type": "audio", "path": str(audio_path)},
+                    {"type": "text", "text": c.instruct_prompt},
+                ],
+            }]
+            inputs = self.processor.apply_chat_template(conversation)
+        else:
+            inputs = self.processor.apply_transcription_request(
+                language=language or "en",
+                audio=str(audio_path),
+                model_id=model_id
+            )
         inputs = inputs.to(self.device, dtype=self.dtype)
 
         # Generation kwargs
@@ -315,6 +375,8 @@ class VoxtralHFCapability(ToolCapability):
                 "language": language or "en",
                 "device": self.device,
                 "dtype": str(self.dtype),
+                "prompt_mode": c.prompt_mode,
+                **({"instruct_prompt": c.instruct_prompt} if c.prompt_mode == "instruct" else {}),
             }
         )
 
