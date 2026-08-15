@@ -130,10 +130,16 @@ class VoxtralHFCapabilityConfig(HFCacheConfig):
         }
     )
     prompt_mode:str = field(
-        default="transcription",
+        # Default flipped to 'instruct' (user 2026-08-15, e0d04210): the custom
+        # verbatim instruct_prompt is the ratified working mode (bench 2026-08-01:
+        # marker recall 0.72/0.74 vs the transcription template), and a forgotten
+        # flip cost a redone run. Affects FRESH configs only — recorded configs
+        # keep their hash identity; pass prompt_mode='transcription' explicitly
+        # for the bare template.
+        default="instruct",
         metadata={
             SCHEMA_TITLE: "Prompt Mode",
-            SCHEMA_DESC: "Input-preparation path: 'transcription' uses the dedicated transcription template (no prompt); 'instruct' rides the chat path (apply_chat_template) with audio + the instruct_prompt text — a different decoding surface, bench before trusting",
+            SCHEMA_DESC: "Input-preparation path: 'instruct' (default) rides the chat path (apply_chat_template) with audio + the instruct_prompt text; 'transcription' uses the dedicated transcription template (no prompt) — different decoding surfaces, bench before trusting",
             SCHEMA_ENUM: ["transcription", "instruct"]
         }
     )
